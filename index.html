@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carrot</title>
+<meta name="theme-color" content="#EEF3F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121A2B" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Carrot">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/figtree-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:200 800;font-display:swap;src:url(fonts/bricolage-grotesque.woff2) format("woff2-variations"),url(fonts/bricolage-grotesque.woff2) format("woff2")}
+@font-face{font-family:Figtree;font-style:normal;font-weight:400;font-display:swap;src:url(fonts/figtree-400.woff2) format("woff2")}
+@font-face{font-family:Figtree;font-style:normal;font-weight:600;font-display:swap;src:url(fonts/figtree-600.woff2) format("woff2")}
+@font-face{font-family:Figtree;font-style:normal;font-weight:700 800;font-display:swap;src:url(fonts/figtree-700.woff2) format("woff2")}
+:root{
+  --paper:#EEF3F6; --card:#FFFFFF; --ink:#1D2A44; --muted:#5B6A85; --line:#D5DEE7;
+  --gold:#FFC93C; --gold-soft:#FFF3CF; --gold-ink:#5A3F00; --teal:#169C93; --coral:#FF6B6B; --coral-ink:#C2373A; --violet:#6C5CE7;
+  --scrim:rgba(18,26,43,.5);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121A2B; --card:#1B2539; --ink:#E8EEF7; --muted:#9AA8C2; --line:#2C3A55; --gold-soft:#3A3220; --gold-ink:#FFE08A; --scrim:rgba(4,8,16,.65); --coral-ink:#FF8E8E;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121A2B; --card:#1B2539; --ink:#E8EEF7; --muted:#9AA8C2; --line:#2C3A55; --gold-soft:#3A3220; --gold-ink:#FFE08A; --scrim:rgba(4,8,16,.65); --coral-ink:#FF8E8E;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
+body.modal-open{overflow:hidden}
+h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;margin:0;line-height:1.1}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+header h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em}
+#tday{color:var(--muted);font-size:15px;margin-top:4px}
+nav{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:18px}
+nav button{flex:1;border:0;background:none;border-radius:9px;padding:9px 10px;font-weight:700;color:var(--muted)}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+
+/* Up next: one card per goal */
+.goal{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px 18px;margin-bottom:16px}
+.gtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;min-width:0}
+.gright{display:flex;align-items:center;gap:2px;flex:none;margin-left:auto}
+.tag{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#5A3F00;font:800 16px/1.15 "Bricolage Grotesque",sans-serif;padding:6px 13px 6px 10px;border-radius:999px 10px 10px 999px;max-width:100%;border:1px solid var(--gold)}
+.tag span:last-child{overflow-wrap:anywhere}
+.tag.locked{background:var(--gold-soft);color:var(--gold-ink);border-style:dashed}
+.pct{font:800 22px/1 "Bricolage Grotesque",sans-serif;color:var(--muted);margin-right:4px}
+.goal h2{font-size:21px;margin-bottom:8px;overflow-wrap:anywhere}
+.why{margin:0 0 10px;color:var(--muted);font-style:italic}
+.bar{height:10px;background:var(--line);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal);border-radius:8px;transition:width .35s}
+.bar.thin{height:6px;margin-top:6px}
+.bar.gold i{background:var(--gold)}
+.nextr{font-size:14px;color:var(--muted);margin:8px 0 0}
+.sect{font:700 14px/1.2 Figtree,sans-serif;color:var(--muted);margin:16px 0 4px}
+ul.rows{list-style:none;margin:0;padding:0}
+.row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.row .body{flex:1;min-width:0}
+.row .name{font-weight:600;overflow-wrap:anywhere}
+.row .meta{font-size:14px;color:var(--muted)}
+.row.done .name{color:var(--muted);text-decoration:line-through}
+.whyin{display:inline-block;margin-left:8px;font-weight:400;font-style:italic;font-size:14px;color:var(--muted)}
+.check{appearance:none;width:26px;height:26px;border:2px solid var(--muted);border-radius:8px;flex:none;margin:0;display:grid;place-items:center;background:var(--card)}
+.check:checked{background:var(--teal);border-color:var(--teal)}
+.check:checked::after{content:"";width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:translateY(-1px) rotate(45deg)}
+.check.sm{width:22px;height:22px;border-radius:7px}
+.check.sm:checked::after{width:6px;height:11px}
+.next{background:var(--paper);border-radius:12px;padding:10px 12px;display:flex;gap:12px;align-items:flex-start;margin-top:4px}
+.next .name{font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.next .body{flex:1;min-width:0}
+.next .meta{font-size:14px;color:var(--muted)}
+.hint{color:var(--muted);font-size:15px;margin:12px 0 0}
+.linkbtn{border:0;background:none;color:var(--ink);font-weight:700;font-size:14px;padding:6px 0 0;text-decoration:underline;text-underline-offset:3px}
+.goal.won{border:2px solid var(--gold);background:linear-gradient(var(--gold-soft),var(--card) 120px)}
+.claim{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.claim p{margin:0;flex:1 1 200px;font-weight:700}
+.goal.collapsed{padding-bottom:14px}
+.goal.collapsed h2{font-size:18px;margin-bottom:6px}
+.goal.collapsed .gtop{margin-bottom:8px}
+.minis{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.mini{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;max-width:100%}
+.mini span{overflow-wrap:anywhere}
+.mini.done span{color:var(--muted);text-decoration:line-through}
+.simple h2{font-size:19px;margin-bottom:2px}
+
+/* buttons */
+.btn{border:0;border-radius:10px;padding:9px 16px;font-weight:700;background:var(--ink);color:var(--paper)}
+.btn.gold{background:var(--gold);color:#5A3F00}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--muted)}
+.btn.danger{background:var(--coral);color:#fff}
+.btn.sm{padding:6px 12px;font-size:14px;margin-top:8px}
+.ibtn{border:0;background:none;color:var(--muted);width:32px;height:32px;border-radius:8px;flex:none;font-size:16px}
+.ibtn:hover{background:var(--paper);color:var(--ink)}
+.ibtn:disabled{opacity:.3;cursor:default;background:none}
+.acts{display:flex;gap:2px;flex:none}
+
+/* Goals page */
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:20px}
+.addgoal{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:10px}
+.addnote{color:var(--muted);font-size:14px;margin:8px 0 0}
+.addbtn{margin-top:6px}
+.btn.outline{background:none;border:1px solid var(--muted);color:var(--ink)}
+.gname{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.goal .gname h2{margin:0}
+.kchip{display:inline-block;font:700 12px/1.2 Figtree,sans-serif;font-style:normal;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap;vertical-align:2px;text-decoration:none}
+.row .name .kchip,.gtile .kchip{margin-left:8px}
+.kchip.over,.due.over{color:var(--coral-ink);border-color:var(--coral)}
+.due{font-weight:600}
+.cnext{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;font-weight:600}
+.cnext span{overflow-wrap:anywhere}
+.cnext .due{color:var(--muted);font-weight:600}
+.cnext .due.over{color:var(--coral-ink)}
+.dateline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dateline input{width:auto;flex:0 1 200px}
+input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 11px;min-width:0;width:100%}
+textarea{min-height:110px;resize:vertical;line-height:1.45}
+.gtile{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px;color:var(--ink)}
+.gtile:hover{border-color:var(--muted)}
+.gtile .gtn{display:block;font:800 18px/1.15 "Bricolage Grotesque",sans-serif;overflow-wrap:anywhere}
+.gtile .meta{display:block;color:var(--muted);font-size:14px;margin-top:3px;overflow-wrap:anywhere}
+.gtile .prog{display:flex;align-items:center;gap:10px;margin-top:8px}
+.gtile .bar{flex:1}
+.gtile .prog b{font-size:14px;color:var(--muted);min-width:38px;text-align:right}
+.form{display:grid;gap:8px;margin:8px 0}
+.form .line{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.form .line > *{flex:1 1 140px}
+.form .line .btn{flex:0 0 auto}
+.cfg{display:grid;gap:8px;background:var(--paper);border-radius:12px;padding:10px 12px}
+.cfg select,.cfg input{background:var(--card)}
+.cfgline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cfgl{font-weight:700;font-size:14px;color:var(--muted);width:76px;flex:none}
+.cfgline select{width:auto;flex:1 1 150px}
+.cfgline input[type=number]{width:76px;flex:0 0 76px}
+.cfgu{color:var(--muted);font-size:14px}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:9px;min-width:46px;padding:7px 0;font-weight:700;font-size:14px;color:var(--muted)}
+.chip.wide{min-width:0;padding:7px 11px;text-align:left;overflow-wrap:anywhere}
+.chip[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.row.off .name{color:var(--muted)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.flag{font-size:14px;font-weight:700;color:var(--gold-ink);background:var(--gold-soft);border-radius:8px;padding:4px 8px;margin-top:4px;display:inline-block}
+.confirm{background:var(--paper);border-radius:12px;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.confirm p{margin:0;flex:1 1 200px;font-weight:600}
+.trophy{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.trophy:last-child{border-bottom:0}
+.trophy .body{flex:1;min-width:0}
+.trophy b{font-family:"Bricolage Grotesque",sans-serif;font-size:18px;overflow-wrap:anywhere}
+.trophy .meta{font-size:14px;color:var(--muted)}
+.bline{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bline .btn{margin:0}
+#backupArea:empty{display:none}
+#backupArea{margin-top:10px}
+#backupArea textarea{min-height:120px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+#backupArea .addnote{margin:0 0 8px}
+.empty{text-align:center;padding:28px 18px}
+.empty h2{font-size:24px;margin-bottom:6px}
+.empty p{color:var(--muted);margin:0 0 14px}
+
+/* pop-out */
+.modal{position:fixed;inset:0;z-index:30;background:var(--scrim);display:flex;align-items:flex-start;justify-content:center;padding:calc(24px + env(safe-area-inset-top,0px)) 12px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet{background:var(--card);border-radius:18px;width:100%;max-width:640px;max-height:100%;overflow:auto;overscroll-behavior:contain;padding:0 18px 18px;box-shadow:0 24px 60px rgba(0,0,0,.28)}
+.shead{position:sticky;top:0;z-index:1;background:var(--card);display:flex;align-items:center;gap:10px;padding:16px 0 12px;border-bottom:1px solid var(--line)}
+.shead h2{flex:1;min-width:0;font-size:22px;overflow-wrap:anywhere}
+.sheet .sect{font:800 17px/1.2 "Bricolage Grotesque",sans-serif;color:var(--ink);margin:22px 0 6px}
+.fld{display:grid;gap:4px;margin-top:12px}
+.fld label{font-weight:700;font-size:14px;color:var(--muted)}
+.fld .note{font-size:13px;color:var(--muted)}
+.sfoot{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+@media (max-width:560px){
+  .modal{padding:env(safe-area-inset-top,0px) 0 0}
+  .sheet{border-radius:18px 18px 0 0;max-height:100%;height:100%;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+}
+
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:24px}
+.flink{border:0;background:none;color:inherit;font:inherit;padding:2px 0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.flink:hover{color:var(--ink)}
+.upd{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;background:var(--ink);color:var(--paper);padding:8px 8px 8px 16px;border-radius:12px;font-weight:600;display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.upd .btn{background:var(--gold);color:#1D2A44;margin:0}
+.snap{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+.snap .btn{margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--paper);padding:11px 16px;border-radius:12px;font-weight:600;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:40}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+[hidden]{display:none!important}
+@media (max-width:520px){.addgoal{grid-template-columns:1fr 1fr}.addgoal input{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Carrot</h1>
+      <div id="tday"></div>
+    </div>
+  </header>
+  <nav role="tablist" aria-label="Pages">
+    <button type="button" role="tab" id="p-next" aria-selected="true">Up next</button>
+    <button type="button" role="tab" id="p-goals" aria-selected="false">Goals</button>
+  </nav>
+  <main>
+    <section id="page-next"></section>
+    <section id="page-goals" hidden>
+      <div class="card">
+        <h2>Add a goal or habit</h2>
+        <div class="addgoal">
+          <input type="text" id="goalName" placeholder="e.g. Drink more water, or Learn piano" aria-label="Goal or habit name">
+          <button type="button" class="btn outline" id="addHabitBtn">Add habit</button>
+          <button type="button" class="btn outline" id="addGoalBtn">Add goal</button>
+        </div>
+        <p class="addnote">Habits are ongoing; goals finish when everything’s done.</p>
+      </div>
+      <div id="goalList"></div>
+      <div class="card" id="trophyCard" hidden>
+        <h2>Trophy shelf</h2>
+        <div id="trophies"></div>
+      </div>
+    </section>
+  </main>
+  <footer><span id="sync">Saved on this device</span><span id="expNote"></span> · <button type="button" class="flink" id="backupLink">Backup</button></footer>
+</div>
+<div class="modal" id="modal" hidden></div>
+<div class="modal" id="bkModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+    <div class="shead"><h2 id="bkTitle">Backup</h2><button type="button" class="ibtn" id="bkClose" aria-label="Close">×</button></div>
+    <p class="addnote" style="margin-top:14px">Export saves all your goals, habits, steps and rewards to a file. Import replaces everything here with a backup.</p>
+    <div class="bline">
+      <button type="button" class="btn outline" id="exportBtn">Export</button>
+      <button type="button" class="btn outline" id="importBtn">Import</button>
+    </div>
+    <div id="backupArea" style="margin-top:12px"></div>
+    <div class="sfoot"><span></span><button type="button" class="btn" id="bkDone">Done</button></div>
+  </div>
+</div>
+<div class="upd" id="updBar" hidden role="status"><span>New version ready.</span><button type="button" class="btn" id="updBtn">Tap to reload</button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+const KEY="rewardgoals";
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const WDN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const WDFULL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const WEEK=[1,2,3,4,5,6,0]; // Monday-first
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+
+function blank(){return {goals:[],habits:[],v:2}}
+let S=blank();
+let tt=0;
+let page="next";
+let editing="";    // id of habit/step/tier whose edit form is open
+let confirmDel=""; // id of goal/habit waiting for delete confirmation
+let refocus="";    // element id to focus after render
+let lastDay="";
+let openGoal="";   // id of the goal whose pop-out is open
+let adding="";     // "tier" or "habit": which add form is open in the pop-out
+let migrated=false;// merge() changed old data, so it should be saved back
+let bkOpen=false;  // backup pop-out (from the footer) is open
+let bkMode="";     // backup card: "" | "out" (export text box) | "in" (import picker) | "confirm" (replace?)
+let bkText="";     // export text shown in the fallback box
+let bkPending=null;// parsed backup waiting for the Replace confirm
+let bkFrom="this backup";// shown in the Replace confirm: "this backup" or "the Oct 19 snapshot"
+let swWaiting=null;// service worker waiting to take over (new version)
+let swReload=false;// reload once the new version takes over (set by the tap)
+try{const p=localStorage.getItem(KEY+"-page");if(p==="next"||p==="goals")page=p}catch(e){}
+
+/* ---------- dates (local time, never toISOString) ---------- */
+function fmtDay(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function dayStr(off){const d=new Date();d.setDate(d.getDate()+(off||0));return fmtDay(d)}
+function today(){return dayStr(0)}
+function parseDay(s){const p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2])}
+function shortDay(s){const d=parseDay(s);return MON[d.getMonth()]+" "+d.getDate()}
+function validDay(x){return typeof x==="string"&&/^\d{4}-\d\d-\d\d$/.test(x)}
+function addDays(s,n){const d=parseDay(s);d.setDate(d.getDate()+n);return fmtDay(d)}
+function wd(s){return parseDay(s).getDay()}
+function weekStart(s){const d=parseDay(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return fmtDay(d)}
+
+/* ---------- persistence: this device (localStorage), daily snapshots, export reminder ---------- */
+function localLoad(){try{const v=localStorage.getItem(KEY);if(v)return JSON.parse(v)}catch(e){}return null}
+function localSave(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){localSave()}
+function lsGet(k){try{return localStorage.getItem(KEY+"-"+k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(KEY+"-"+k,v)}catch(e){}}
+/* snapshots: the saved data as it stood at the start of each day; the last 7 kept */
+function getSnaps(){try{const a=JSON.parse(lsGet("snaps")||"[]");return Array.isArray(a)?a.filter(x=>x&&validDay(x.day)&&typeof x.state==="string"):[]}catch(e){return []}}
+function takeSnapshot(){const t=today();let a=getSnaps();if(a.some(x=>x.day===t))return;
+  let cur=null;try{cur=localStorage.getItem(KEY)}catch(e){}
+  if(!cur)return;try{const o=JSON.parse(cur);if(!o||!Array.isArray(o.goals)||!o.goals.length)return}catch(e){return}
+  a.push({day:t,state:cur});a.sort((x,y)=>x.day.localeCompare(y.day));a=a.slice(-7);
+  while(a.length){try{localStorage.setItem(KEY+"-snaps",JSON.stringify(a));break}catch(e){a.shift()}}}
+function daysBetween(a,b){return Math.round((parseDay(b)-parseDay(a))/864e5)}
+function markExported(){lsSet("exported",today());renderFooter()}
+function renderFooter(){const ex=lsGet("exported"),since=lsGet("since")||today(),ref=validDay(ex)?ex:since,n=daysBetween(ref,today());
+  $("expNote").textContent=n>=7?(validDay(ex)?" · Last export "+n+" days ago":" · No export yet"):""}
+function str(o,k){if(typeof o[k]!=="string")o[k]=""}
+function num(o,k){o[k]=Math.max(0,Math.round(+o[k]||0))}
+function cleanTrig(o){o=o&&typeof o==="object"?o:{};
+  const type=["all","pct","habit","steps"].includes(o.type)?o.type:"all";
+  return {type,pct:Math.min(100,Math.max(1,Math.round(+o.pct||50))),habit:typeof o.habit==="string"?o.habit:"",
+    hk:o.hk==="total"?"total":"streak",n:Math.min(999,Math.max(1,Math.round(+o.n||10))),
+    steps:Array.isArray(o.steps)?o.steps.filter(x=>typeof x==="string"):[]}}
+function merge(o){if(!o||typeof o!=="object")return;
+  S=Object.assign(blank(),o);S.v=2;
+  if(!Array.isArray(S.goals))S.goals=[];
+  if(!Array.isArray(S.habits))S.habits=[];
+  S.goals=S.goals.filter(g=>g&&typeof g==="object");
+  S.habits=S.habits.filter(h=>h&&typeof h==="object");
+  /* examples are gone: remove any still marked as examples, with their habits */
+  const exG=S.goals.filter(g=>g.ex).map(g=>g.id);
+  if(exG.length||S.habits.some(h=>h.ex)||"example" in S){
+    S.goals=S.goals.filter(g=>!g.ex);S.habits=S.habits.filter(h=>!h.ex&&!exG.includes(h.goal));delete S.example;migrated=true}
+  S.goals.forEach(g=>{str(g,"id");if(!g.id)g.id=uid();str(g,"name");str(g,"claimed");str(g,"why");str(g,"desc");
+    g.collapsed=!!g.collapsed;g.ongoing=!!g.ongoing;g.due=validDay(g.due)?g.due:"";delete g.showSteps;delete g.ex;
+    if(!Array.isArray(g.steps))g.steps=[];
+    g.steps=g.steps.filter(s=>s&&typeof s==="object");
+    g.steps.forEach(s=>{str(s,"id");if(!s.id)s.id=uid();str(s,"text");str(s,"doneOn");s.done=!!s.done;s.due=validDay(s.due)?s.due:""});
+    if(!Array.isArray(g.tiers))g.tiers=[];
+    g.tiers=g.tiers.filter(t=>t&&typeof t==="object");
+    g.tiers.forEach(t=>{str(t,"id");if(!t.id)t.id=uid();str(t,"name");str(t,"claimed");t.trig=cleanTrig(t.trig)});
+    /* first versions had one reward per goal: it becomes the goal's "everything done" tier */
+    if("reward" in g){const r=typeof g.reward==="string"?g.reward.trim():"";
+      if(r&&!g.tiers.length)g.tiers.push({id:uid(),name:r,trig:cleanTrig({type:"all"}),claimed:g.claimed});
+      delete g.reward;migrated=true}});
+  S.habits.forEach(h=>{str(h,"id");if(!h.id)h.id=uid();str(h,"name");str(h,"goal");delete h.ex;
+    if(h.kind!=="total")h.kind="streak";
+    h.target=Math.min(999,Math.max(1,Math.round(+h.target||30)));
+    h.sched=cleanSched(h.sched);
+    /* older saves kept last/streak/best/total: rebuild the current streak as a day log, keep the rest as base counts */
+    if(!Array.isArray(h.log)){const log=[];const last=typeof h.last==="string"&&/^\d{4}-\d\d-\d\d$/.test(h.last)?h.last:"";
+      if(last)for(let i=0;i<Math.max(1,Math.round(+h.streak||0));i++)log.push(addDays(last,-i));
+      h.log=log;h.totalBase=Math.max(0,Math.round(+h.total||0)-log.length);h.bestBase=Math.max(0,Math.round(+h.best||0))}
+    h.log=Array.from(new Set(h.log.filter(x=>typeof x==="string"&&/^\d{4}-\d\d-\d\d$/.test(x)))).sort();
+    num(h,"totalBase");num(h,"bestBase");
+    delete h.last;delete h.streak;delete h.best;delete h.total;delete h.prev});
+}
+
+/* ---------- habits ----------
+   Each habit keeps a log of the days it was done (h.log, sorted "YYYY-MM-DD").
+   Streaks, best and totals are computed from the log and the schedule:
+   daily = consecutive days; days = consecutive scheduled days (off days are skipped);
+   weekly = consecutive weeks (Mon–Sun) with at least n check-offs. Today never breaks a streak. */
+function cleanSched(o){o=o&&typeof o==="object"?o:{};const type=o.type==="days"||o.type==="weekly"?o.type:"daily";
+  let days=Array.isArray(o.days)?Array.from(new Set(o.days.map(x=>Math.round(+x)).filter(x=>x>=0&&x<=6))):[];
+  const n=Math.min(6,Math.max(1,Math.round(+o.n||3)));
+  if(type==="days"&&!days.length)return {type:"daily",days:[],n};
+  return {type,days,n}}
+function findHabit(id){return S.habits.find(h=>h.id===id)||null}
+function findGoal(id){return S.goals.find(g=>g.id===id)||null}
+function isWeekly(h){return h.sched.type==="weekly"}
+function isSched(h,s){return h.sched.type==="days"?h.sched.days.includes(wd(s)):true}
+function doneOn(h,s){return h.log.includes(s)}
+function doneToday(h){return doneOn(h,today())}
+function weekCount(h,ws){const we=addDays(ws,6);return h.log.filter(x=>x>=ws&&x<=we).length}
+function thisWeek(h){return weekCount(h,weekStart(today()))}
+/* shows as something to do today (counts toward "x of y habits done today") */
+function dueToday(h){if(isWeekly(h))return doneToday(h)||thisWeek(h)<h.sched.n;return isSched(h,today())}
+function nextSchedDay(h){for(let i=1;i<=7;i++){const d=dayStr(i);if(isSched(h,d))return i===1?"tomorrow":WDFULL[wd(d)]}return ""}
+function curStreak(h){const t0=today();let c=0,g=0;
+  if(isWeekly(h)){let ws=weekStart(t0);if(weekCount(h,ws)>=h.sched.n)c++;ws=addDays(ws,-7);
+    while(g++<600&&weekCount(h,ws)>=h.sched.n){c++;ws=addDays(ws,-7)}return c}
+  if(isSched(h,t0)&&doneOn(h,t0))c++;
+  let d=addDays(t0,-1);
+  while(g++<4000&&h.log.length&&d>=h.log[0]){if(isSched(h,d)){if(doneOn(h,d))c++;else break}d=addDays(d,-1)}
+  return c}
+function bestStreak(h){let best=h.bestBase||0;if(!h.log.length)return best;const t0=today();let run=0,g=0;
+  if(isWeekly(h)){let ws=weekStart(h.log[0]);const end=weekStart(t0);
+    while(ws<=end&&g++<600){if(weekCount(h,ws)>=h.sched.n){run++;if(run>best)best=run}else if(ws<end)run=0;ws=addDays(ws,7)}return best}
+  let d=h.log[0];
+  while(d<=t0&&g++<5000){if(isSched(h,d)){if(doneOn(h,d)){run++;if(run>best)best=run}else if(d<t0)run=0}d=addDays(d,1)}
+  return best}
+function totalDone(h){return h.log.length+(h.totalBase||0)}
+function habitVal(h){return h.kind==="total"?totalDone(h):curStreak(h)}
+function habitMet(h){return (h.kind==="total"?totalDone(h):Math.max(bestStreak(h),curStreak(h)))>=h.target}
+function habitPct(h){return habitMet(h)?1:Math.min(1,habitVal(h)/h.target)}
+/* on an ongoing goal a habit's target steps up each time it's reached: 30, 60, 90… (worked out from the log, nothing stored) */
+function stepping(h){const g=findGoal(h.goal);return !!(g&&g.ongoing)}
+function nextTarget(h){const b=h.target,v=h.kind==="total"?totalDone(h):Math.max(bestStreak(h),curStreak(h));return (Math.floor(v/b)+1)*b}
+function habitBar(h){if(!stepping(h))return habitPct(h);const n=nextTarget(h);
+  if(h.kind==="total")return (totalDone(h)-(n-h.target))/h.target;return Math.min(1,curStreak(h)/n)}
+function habitGold(h){return !stepping(h)&&habitMet(h)}
+function unit(h){return isWeekly(h)?"week":"day"}
+function schedText(h){const t=h.sched;
+  if(t.type==="daily")return "Every day";
+  if(t.type==="weekly")return t.n+(t.n===1?" time":" times")+" a week";
+  const ds=t.days;
+  if(ds.length===7)return "Every day";
+  if(ds.length===5&&[1,2,3,4,5].every(x=>ds.includes(x)))return "Weekdays";
+  if(ds.length===2&&ds.includes(0)&&ds.includes(6))return "Weekends";
+  return WEEK.filter(x=>ds.includes(x)).map(x=>WDN[x]).join(", ")}
+function targetText(h){const t=h.kind==="total"?h.target+" times total":h.target+"-"+unit(h)+" streak";return stepping(h)?t+", then +"+h.target+" each time":t}
+function habitMeta(h){const pre=[];
+  if(isWeekly(h))pre.push(thisWeek(h)+" of "+h.sched.n+" this week");
+  else if(!isSched(h,today())&&!doneToday(h))pre.push("Off today, back "+nextSchedDay(h));
+  let p;
+  if(stepping(h)){const n=nextTarget(h);
+    if(h.kind==="total")p=totalDone(h)+(totalDone(h)===1?" time":" times")+". Next: "+n;
+    else{const s=curStreak(h),b=bestStreak(h);p=(s?s+"-"+unit(h)+" streak":"No streak yet")+(b>s?", best "+b:"")+". Next: "+n}
+    pre.push(p);return pre.join(". ")}
+  if(h.kind==="total")p=totalDone(h)+" of "+h.target+" times"+(habitMet(h)?", target met":"");
+  else{const s=curStreak(h),u=unit(h),b=bestStreak(h);
+    if(habitMet(h))p=s?s+"-"+u+" streak, target met":"Target met";
+    else if(!s)p="No streak yet, need "+h.target+(b?" (best "+b+")":"");
+    else p=s+"-"+u+" streak, need "+h.target}
+  pre.push(p);return pre.join(". ")}
+
+/* ---------- goals, steps and reward tiers ---------- */
+function goalHabits(g){return S.habits.filter(h=>h.goal===g.id)}
+/* steps by urgency: unchecked ones due soonest, then undated in list (priority) order, then done ones */
+function orderedSteps(g){const ix={};g.steps.forEach((s,i)=>ix[s.id]=i);
+  const open=g.steps.filter(s=>!s.done).sort((a,b)=>{if(a.due&&b.due)return a.due.localeCompare(b.due)||ix[a.id]-ix[b.id];if(a.due)return -1;if(b.due)return 1;return ix[a.id]-ix[b.id]});
+  return open.concat(g.steps.filter(s=>s.done))}
+function nextStep(g){return orderedSteps(g).find(s=>!s.done)||null}
+/* due dates: ending goals only (an ongoing goal keeps its date hidden), steps on any goal */
+function goalDue(g){return !g.ongoing&&g.due?g.due:""}
+function dueInfo(day){const n=Math.round((parseDay(day)-parseDay(today()))/864e5),d=parseDay(day);
+  if(n<0)return {text:"Overdue by "+(-n)+(n===-1?" day":" days"),over:true};
+  if(n===0)return {text:"Due today",over:false};if(n===1)return {text:"Due tomorrow",over:false};
+  if(n<7)return {text:"Due "+WDN[d.getDay()],over:false};
+  return {text:"Due "+shortDay(day)+(d.getFullYear()!==new Date().getFullYear()?", "+d.getFullYear():""),over:false}}
+function kindChip(g){const d=goalDue(g);if(d){const i=dueInfo(d);return el("span","kchip"+(i.over?" over":""),i.text)}
+  return el("span","kchip",g.ongoing?"Ongoing":"Ending")}
+function dueSpan(day,cls){const i=dueInfo(day);return el("span",(cls||"due")+(i.over?" over":""),i.text)}
+/* card order: ready to claim or finish, then dated goals soonest first, then the rest as they are */
+function sortGoals(list){const ix=new Map(list.map((g,i)=>[g.id,i]));
+  function rd(g){return claimable(g).length>0||finishable(g)}
+  return list.slice().sort((a,b)=>{const r=rd(b)-rd(a);if(r)return r;const da=goalDue(a),db=goalDue(b);
+    if(da&&db)return da.localeCompare(db)||ix.get(a.id)-ix.get(b.id);if(da)return -1;if(db)return 1;return ix.get(a.id)-ix.get(b.id)})}
+function stepsDone(g){return g.steps.filter(s=>s.done).length}
+function reqs(g){const r=goalHabits(g).map(h=>({pct:habitPct(h),met:habitMet(h)}));
+  if(g.steps.length)r.push({pct:stepsDone(g)/g.steps.length,met:stepsDone(g)===g.steps.length});
+  return r}
+function goalPct(g){const r=reqs(g);if(!r.length)return 0;return r.reduce((a,x)=>a+x.pct,0)/r.length}
+/* everything done: every habit target met and every step checked */
+function unlocked(g){const r=reqs(g);return r.length>0&&r.every(x=>x.met)}
+function active(){return S.goals.filter(g=>!g.claimed)}
+/* a simple habit: one habit, no steps and no reward tiers; shows as a one-line row */
+function isSimple(g){return goalHabits(g).length===1&&!g.steps.length&&!g.tiers.length}
+/* an ongoing goal never finishes; its rewards unlock only from a habit count or specific steps */
+function finishable(g){return !g.ongoing&&unlocked(g)}
+function trigOK(g,t){return !g.ongoing||t.trig.type==="habit"||t.trig.type==="steps"}
+function tierMet(g,t){const r=t.trig;
+  if(!trigOK(g,t))return false;
+  if(r.type==="all")return unlocked(g);
+  if(r.type==="pct")return goalPct(g)*100>=r.pct-1e-9;
+  if(r.type==="habit"){const h=findHabit(r.habit);if(!h||h.goal!==g.id)return false;
+    return (r.hk==="total"?totalDone(h):Math.max(bestStreak(h),curStreak(h)))>=r.n}
+  if(r.type==="steps"){const ss=r.steps.map(id=>g.steps.find(s=>s.id===id)).filter(Boolean);return ss.length>0&&ss.every(s=>s.done)}
+  return false}
+function tierText(g,t){const r=t.trig;
+  if(r.type==="pct")return "at "+r.pct+"% of the goal";
+  if(r.type==="habit"){const h=findHabit(r.habit);if(!h||h.goal!==g.id)return "its habit was removed";
+    return r.hk==="total"?"after "+r.n+" times on "+h.name:"at a "+r.n+"-"+unit(h)+" streak on "+h.name}
+  if(r.type==="steps"){const ss=r.steps.map(id=>g.steps.find(s=>s.id===id)).filter(Boolean);
+    if(!ss.length)return "its steps were removed";
+    return ss.length===1?"after "+ss[0].text:"after "+ss.length+" steps: "+ss.map(s=>s.text).join(", ")}
+  return "when everything's done"}
+function claimable(g){return g.tiers.filter(t=>!t.claimed&&tierMet(g,t))}
+function nextTier(g){return g.tiers.find(t=>!t.claimed&&trigOK(g,t)&&!tierMet(g,t))||null}
+/* progress toward one habit-count or steps reward: {v, n, label} */
+function tierProg(g,t){const r=t.trig;
+  if(r.type==="habit"){const h=findHabit(r.habit);if(!h||h.goal!==g.id)return {v:0,n:1,label:"its habit was removed"};
+    if(r.hk==="total")return {v:Math.min(r.n,totalDone(h)),n:r.n,label:totalDone(h)+" of "+r.n+" times on "+h.name};
+    const v=Math.max(bestStreak(h),curStreak(h));return {v:Math.min(r.n,v),n:r.n,label:v+" of "+r.n+" "+unit(h)+"s in a row on "+h.name}}
+  if(r.type==="steps"){const ss=r.steps.map(id=>g.steps.find(s=>s.id===id)).filter(Boolean),k=ss.filter(s=>s.done).length;
+    return {v:k,n:Math.max(1,ss.length),label:k+" of "+ss.length+(ss.length===1?" step":" steps")}}
+  return {v:goalPct(g),n:1,label:Math.round(goalPct(g)*100)+"% of the goal"}}
+/* what the card's number and bar track: the goal's % (ending) or the next reward (ongoing); null = no bar */
+function cardProg(g){if(!g.ongoing)return {pct:goalPct(g),t:null};
+  const t=nextTier(g);if(!t)return null;const p=tierProg(g,t);return {pct:p.v/p.n,t,label:p.label}}
+function snapshot(g){return {ready:claimable(g).map(t=>t.id),done:finishable(g)}}
+function unlockMsg(g,before){const now=claimable(g).filter(t=>!before.ready.includes(t.id));
+  if(now.length)return "Unlocked: "+now.map(t=>t.name).join(" and ")+"!";
+  if(!before.done&&finishable(g))return "Everything's done for "+g.name+"!";
+  return ""}
+
+function toggleHabit(id){const h=findHabit(id);if(!h)return;const g=findGoal(h.goal);const before=g?snapshot(g):null;const t0=today();const stepBefore=nextTarget(h);
+  if(doneToday(h))h.log=h.log.filter(x=>x!==t0);
+  else{h.log.push(t0);h.log.sort();
+    const m=g?unlockMsg(g,before):"";let st="";
+    if(stepping(h)){const n=nextTarget(h);if(n>stepBefore){const hit=n-h.target;st=(h.kind==="total"?hit+" times":hit+"-"+unit(h)+" streak")+" hit. Next: "+n+"."}}
+    toast([m,st].filter(Boolean).join(" ")||h.name+": "+habitMeta(h)+".")}
+  save();render()}
+function toggleStep(gid,sid){const g=findGoal(gid);if(!g)return;const s=g.steps.find(s=>s.id===sid);if(!s)return;const before=snapshot(g);
+  s.done=!s.done;s.doneOn=s.done?today():"";
+  if(s.done){const m=unlockMsg(g,before);if(m)toast(m);
+    else{const n=nextStep(g);toast(n?"Done. Next up: "+n.text+".":"All steps done.")}}
+  save();render()}
+function claimTier(gid,tid){const g=findGoal(gid);if(!g)return;const t=g.tiers.find(x=>x.id===tid);if(!t||t.claimed||!tierMet(g,t))return;
+  t.claimed=today();
+  if(finishable(g)&&!claimable(g).length&&!g.tiers.some(x=>!x.claimed)){g.claimed=today();if(openGoal===g.id)openGoal="";
+    toast("Enjoy your "+t.name+"! "+g.name+" is finished and on your trophy shelf.")}
+  else toast("Enjoy your "+t.name+"! It's on your trophy shelf.");
+  save();render()}
+function finishGoal(gid){const g=findGoal(gid);if(!g||!finishable(g))return;g.claimed=today();if(openGoal===g.id)openGoal="";
+  toast("Finished "+g.name+". It's on your trophy shelf.");save();render()}
+function unclaimTier(gid,tid){const g=findGoal(gid);if(!g)return;const t=g.tiers.find(x=>x.id===tid);if(!t)return;t.claimed="";g.claimed="";save();render()}
+function unfinish(gid){const g=findGoal(gid);if(!g)return;g.claimed="";save();render()}
+function newGoal(name,ongoing){return {id:uid(),name,why:"",desc:"",tiers:[],steps:[],claimed:"",collapsed:false,ongoing:!!ongoing,due:""}}
+function addQuickHabit(){const n=$("goalName").value.trim();if(!n){$("goalName").focus();return}
+  const g=newGoal(n,true);S.goals.unshift(g);
+  S.habits.push({id:uid(),name:n,goal:g.id,kind:"streak",target:30,sched:cleanSched({type:"daily"}),log:[],totalBase:0,bestBase:0});
+  $("goalName").value="";refocus="goalName";
+  toast("Added "+n+": every day, aiming for a 30-day streak. Tap ✎ to change it.");save();render()}
+function addGoal(){const n=$("goalName").value.trim();if(!n){$("goalName").focus();return}
+  const g=newGoal(n,false);S.goals.unshift(g);$("goalName").value="";
+  refocus="addTierBtn";openGoal=g.id;editing="";confirmDel="";adding="";save();render()}
+function delGoal(id){const g=findGoal(id);if(!g)return;S.goals=S.goals.filter(x=>x.id!==id);S.habits=S.habits.filter(h=>h.goal!==id);
+  confirmDel="";if(openGoal===id)openGoal="";toast('Deleted "'+g.name+'"');save();render()}
+function addHabit(gid){const g=findGoal(gid);if(!g)return;const n=$("hn-"+gid).value.trim();if(!n){$("hn-"+gid).focus();return}
+  const c=readConfig("cfgA-"+gid);if(!c)return;
+  S.habits.push({id:uid(),name:n,goal:gid,kind:c.kind,target:c.target,sched:c.sched,log:[],totalBase:0,bestBase:0});
+  adding="";refocus="addHabitOpen";toast("Added "+n+": "+schedText(S.habits[S.habits.length-1]).toLowerCase()+".");save();render()}
+function delHabit(id){const h=findHabit(id);if(!h)return;S.habits=S.habits.filter(x=>x.id!==id);confirmDel="";toast('Deleted "'+h.name+'"');save();render()}
+function addStep(gid){const g=findGoal(gid);if(!g)return;const v=$("sn-"+gid).value.trim();if(!v){$("sn-"+gid).focus();return}
+  const dv=$("sd-"+gid)?$("sd-"+gid).value:"";
+  g.steps.push({id:uid(),text:v,done:false,doneOn:"",due:validDay(dv)?dv:""});refocus="sn-"+gid;save();render()}
+function delStep(gid,sid){const g=findGoal(gid);if(!g)return;g.steps=g.steps.filter(s=>s.id!==sid);save();render()}
+function moveStep(gid,sid,dir){const g=findGoal(gid);if(!g)return;const i=g.steps.findIndex(s=>s.id===sid),j=i+dir;
+  if(i<0||j<0||j>=g.steps.length)return;const t=g.steps[i];g.steps[i]=g.steps[j];g.steps[j]=t;
+  refocus=(dir<0?"up-":"dn-")+sid;save();render()}
+function addTier(gid){const g=findGoal(gid);if(!g)return;const r=readTier("tfA",g);if(!r)return;
+  const t={id:uid(),name:r.name,trig:r.trig,claimed:""};g.tiers.push(t);adding="";refocus="addTierBtn";
+  toast("Added "+t.name+": unlocks "+tierText(g,t)+".");save();render()}
+function delTier(gid,tid){const g=findGoal(gid);if(!g)return;g.tiers=g.tiers.filter(t=>t.id!==tid);save();render()}
+function openPop(id,add){openGoal=id;editing="";confirmDel="";adding=add||"";refocus=refocus||"pclose";render()}
+function closePop(){const id=openGoal;openGoal="";editing="";confirmDel="";adding="";refocus="open-"+id;render()}
+
+/* ---------- UI helpers ---------- */
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(function(){t.classList.remove("show")},2800)}
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function btn(cls,text,label,fn){const b=el("button",cls,text);b.type="button";if(label)b.setAttribute("aria-label",label);b.addEventListener("click",fn);return b}
+function bar(p,cls){const b=el("div","bar"+(cls?" "+cls:""));const i=el("i");i.style.width=Math.round(p*100)+"%";b.appendChild(i);return b}
+function check(on,label,fn,cls){const c=el("input","check"+(cls?" "+cls:""));c.type="checkbox";c.checked=on;c.setAttribute("aria-label",label);c.addEventListener("change",fn);return c}
+function pill(g,t){const met=tierMet(g,t),p=el("span","tag"+(met?"":" locked"));p.title=t.name+": "+(met?"ready to claim":"unlocks "+tierText(g,t));
+  p.appendChild(el("span",null,"🎁"));p.appendChild(el("span",null,t.name));return p}
+function onEnter(inp,fn){inp.addEventListener("keydown",function(e){if(e.key==="Enter"&&inp.tagName!=="TEXTAREA"){e.preventDefault();fn()}
+  else if(e.key==="Escape"&&editing){e.stopPropagation();editing="";render()}})}
+function input(id,val,ph){const i=el("input");i.type="text";if(id)i.id=id;i.value=val||"";if(ph){i.placeholder=ph;i.setAttribute("aria-label",ph)}return i}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+/* habit configurator: how often (every day / specific days / times per week) + target (streak or total) */
+function habitConfig(px,h){const sc=h?h.sched:{type:"daily",days:[1,2,3,4,5],n:3},w=el("div","cfg");
+  const l1=el("div","cfgline");l1.appendChild(el("span","cfgl","How often"));
+  const sel=el("select");sel.id=px+"-type";sel.setAttribute("aria-label","How often");
+  [["daily","Every day"],["days","Specific days"],["weekly","Times per week"]].forEach(o=>{const op=el("option",null,o[1]);op.value=o[0];if(o[0]===sc.type)op.selected=true;sel.appendChild(op)});
+  l1.appendChild(sel);w.appendChild(l1);
+  const chips=el("div","chips");chips.id=px+"-days";chips.setAttribute("role","group");chips.setAttribute("aria-label","Days of the week");
+  const on=sc.type==="days"?sc.days:[1,2,3,4,5];
+  WEEK.forEach(x=>{const b=el("button","chip",WDN[x]);b.type="button";b.dataset.d=String(x);b.setAttribute("aria-label",WDFULL[x]);
+    b.setAttribute("aria-pressed",String(on.includes(x)));b.addEventListener("click",function(){b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});chips.appendChild(b)});
+  w.appendChild(chips);
+  const wk=el("div","cfgline");wk.id=px+"-wk";const n=el("input");n.type="number";n.min="1";n.max="6";n.id=px+"-n";n.value=String(sc.n||3);n.setAttribute("aria-label","Times per week");
+  wk.appendChild(n);wk.appendChild(el("span","cfgu","times a week"));w.appendChild(wk);
+  const l2=el("div","cfgline");l2.appendChild(el("span","cfgl","Target"));
+  const k=el("select");k.id=px+"-kind";k.setAttribute("aria-label","Target type");
+  [["streak","Streak in a row"],["total","Total check-offs"]].forEach(o=>{const op=el("option",null,o[1]);op.value=o[0];if(o[0]===(h?h.kind:"streak"))op.selected=true;k.appendChild(op)});
+  const t=el("input");t.type="number";t.min="1";t.max="999";t.id=px+"-t";t.value=String(h?h.target:30);t.setAttribute("aria-label","Target number");
+  const u=el("span","cfgu");u.id=px+"-u";l2.appendChild(k);l2.appendChild(t);l2.appendChild(u);w.appendChild(l2);
+  function sync(){const ty=sel.value;chips.hidden=ty!=="days";wk.hidden=ty!=="weekly";
+    u.textContent=k.value==="total"?"times":ty==="weekly"?"weeks in a row":ty==="days"?"scheduled days in a row":"days in a row"}
+  sel.addEventListener("change",sync);k.addEventListener("change",sync);sync();
+  return w}
+function readConfig(px){const ty=$(px+"-type").value;let days=[];
+  if(ty==="days"){days=[...$(px+"-days").querySelectorAll(".chip")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>+b.dataset.d);
+    if(!days.length){toast("Pick at least one day.");$(px+"-days").querySelector(".chip").focus();return null}}
+  const sched=cleanSched({type:ty,days,n:$(px+"-n").value});
+  return {sched,kind:$(px+"-kind").value==="total"?"total":"streak",target:Math.min(999,Math.max(1,Math.round(+$(px+"-t").value||30)))}}
+/* reward tier form: a name and what unlocks it (everything done / % of goal / a habit count / specific steps) */
+function tierForm(px,g,t,commit){const w=el("div","cfg"),hs=goalHabits(g);
+  const tr=t?t.trig:cleanTrig({type:g.ongoing?(hs.length?"habit":"steps"):g.tiers.some(x=>x.trig.type==="all")?"pct":"all"});
+  const nm=input(px+"-name",t?t.name:"","Reward, e.g. New headphones");w.appendChild(nm);onEnter(nm,commit);
+  const l1=el("div","cfgline");l1.appendChild(el("span","cfgl","Unlocks"));
+  const sel=el("select");sel.id=px+"-trig";sel.setAttribute("aria-label","What unlocks it");
+  [["all","When everything's done"],["pct","At a % of the goal"],["habit","At a habit count"],["steps","After specific steps"]].forEach(o=>{
+    const op=el("option",null,o[1]);op.value=o[0];if(o[0]===tr.type)op.selected=true;
+    if(g.ongoing&&(o[0]==="all"||o[0]==="pct")){op.disabled=true;op.hidden=true}
+    if(o[0]==="habit"&&!hs.length){op.disabled=true;op.textContent+=" (add a habit first)"}
+    if(o[0]==="steps"&&!g.steps.length){op.disabled=true;op.textContent+=" (add a step first)"}
+    sel.appendChild(op)});
+  if(sel.selectedOptions[0]&&sel.selectedOptions[0].disabled){const f=[...sel.options].find(o=>!o.disabled);if(f)sel.value=f.value}
+  l1.appendChild(sel);w.appendChild(l1);
+  const lp=el("div","cfgline");const pc=el("input");pc.type="number";pc.min="1";pc.max="100";pc.id=px+"-pct";pc.value=String(tr.pct);pc.setAttribute("aria-label","Percent of the goal");
+  lp.appendChild(el("span","cfgl","At"));lp.appendChild(pc);lp.appendChild(el("span","cfgu","% of the goal"));w.appendChild(lp);onEnter(pc,commit);
+  const lh=el("div","cfgline");lh.appendChild(el("span","cfgl","Habit"));
+  const hsel=el("select");hsel.id=px+"-hab";hsel.setAttribute("aria-label","Which habit");
+  hs.forEach(h=>{const op=el("option",null,h.name);op.value=h.id;if(h.id===tr.habit)op.selected=true;hsel.appendChild(op)});lh.appendChild(hsel);w.appendChild(lh);
+  const lh2=el("div","cfgline");lh2.appendChild(el("span","cfgl","Reaches"));
+  const hn=el("input");hn.type="number";hn.min="1";hn.max="999";hn.id=px+"-hn";hn.value=String(tr.n);hn.setAttribute("aria-label","Count");onEnter(hn,commit);
+  const hk=el("select");hk.id=px+"-hk";hk.setAttribute("aria-label","Streak or total");
+  [["streak","in a row (streak)"],["total","times total"]].forEach(o=>{const op=el("option",null,o[1]);op.value=o[0];if(o[0]===tr.hk)op.selected=true;hk.appendChild(op)});
+  lh2.appendChild(hn);lh2.appendChild(hk);w.appendChild(lh2);
+  const ch=el("div","chips");ch.id=px+"-steps";ch.setAttribute("role","group");ch.setAttribute("aria-label","Steps that unlock it");
+  g.steps.forEach(s=>{const b=el("button","chip wide",s.text);b.type="button";b.dataset.s=s.id;b.setAttribute("aria-pressed",String(tr.steps.includes(s.id)));
+    b.addEventListener("click",function(){b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});ch.appendChild(b)});
+  w.appendChild(ch);
+  function sync(){const v=sel.value;lp.hidden=v!=="pct";lh.hidden=lh2.hidden=v!=="habit";ch.hidden=v!=="steps"}
+  sel.addEventListener("change",sync);sync();
+  return w}
+function readTier(px,g){const nm=$(px+"-name"),name=nm.value.trim();if(!name){toast("Name the reward.");nm.focus();return null}
+  const type=$(px+"-trig").value;const o={type};
+  if(g.ongoing&&(type==="all"||type==="pct"||!type)){toast("Ongoing goals unlock rewards from a habit count or steps. Add a habit or step first.");return null}
+  if(type==="pct")o.pct=$(px+"-pct").value;
+  if(type==="habit"){o.habit=$(px+"-hab").value;o.hk=$(px+"-hk").value;o.n=$(px+"-hn").value;if(!o.habit){toast("Add a habit first.");return null}}
+  if(type==="steps"){o.steps=[...$(px+"-steps").querySelectorAll(".chip")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>b.dataset.s);
+    if(!o.steps.length){toast("Pick at least one step.");const f=$(px+"-steps").querySelector(".chip");if(f)f.focus();return null}}
+  return {name,trig:cleanTrig(o)}}
+function setPage(p){page=p;editing="";confirmDel="";bkMode="";bkPending=null;try{localStorage.setItem(KEY+"-page",p)}catch(e){}render();window.scrollTo(0,0)}
+
+/* ---------- render ---------- */
+function render(){
+  renderTop();
+  renderModal();
+  renderBkModal();
+  renderFooter();
+  if(refocus){const f=$(refocus);refocus="";if(f)f.focus()}
+}
+/* everything except the pop-out (used while typing in the pop-out's text fields) */
+function renderTop(){
+  lastDay=today();
+  const d=new Date(),hs=S.habits.filter(h=>{const g=findGoal(h.goal);return g&&!g.claimed&&dueToday(h)}),n=hs.filter(doneToday).length;
+  $("tday").textContent=DAYS[d.getDay()]+", "+MON[d.getMonth()]+" "+d.getDate()+(hs.length?". "+n+" of "+hs.length+" habits done today":"");
+  $("p-next").setAttribute("aria-selected",String(page==="next"));
+  $("p-goals").setAttribute("aria-selected",String(page==="goals"));
+  $("page-next").hidden=page!=="next";$("page-goals").hidden=page!=="goals";
+  if(page==="next"){$("goalList").innerHTML="";$("trophies").innerHTML="";renderNext()}
+  else{$("page-next").innerHTML="";renderGoals()}
+}
+
+function renderNext(){const P=$("page-next");P.innerHTML="";const list=active();
+  if(!list.length){const e=el("div","card empty");
+    e.appendChild(el("h2",null,S.goals.length?"Every goal finished":"Pick something to work on"));
+    e.appendChild(el("p",null,S.goals.length?"Set your next goal or habit.":"Add a habit to build, or a goal with rewards to earn."));
+    e.appendChild(btn("btn","Add a goal or habit",null,function(){refocus="goalName";setPage("goals")}));
+    P.appendChild(e);return}
+  const simple=list.filter(isSimple),full=list.filter(g=>!isSimple(g));
+  if(simple.length){const c=el("section","goal simple");c.appendChild(el("h2",null,"Habits"));const ul=el("ul","rows");
+    simple.slice().sort((a,b)=>dueToday(goalHabits(b)[0])-dueToday(goalHabits(a)[0])).forEach(g=>ul.appendChild(simpleRow(g)));
+    c.appendChild(ul);P.appendChild(c)}
+  sortGoals(full).forEach(g=>P.appendChild(nextCard(g)));
+}
+function simpleRow(g){const h=goalHabits(g)[0];const li=el("li","row"+(doneToday(h)?" done":"")+(dueToday(h)?"":" off"));
+  li.appendChild(check(doneToday(h),h.name,function(){toggleHabit(h.id)}));
+  const b=el("div","body");const n=el("div","name",h.name);n.appendChild(kindChip(g));if(g.why)n.appendChild(el("span","whyin",g.why));b.appendChild(n);
+  b.appendChild(el("div","meta",habitMeta(h)));b.appendChild(bar(habitBar(h),"thin"+(habitGold(h)?" gold":"")));
+  if(finishable(g))b.appendChild(btn("btn gold sm","Finish","Finish "+g.name,function(){finishGoal(g.id)}));
+  li.appendChild(b);
+  const o=btn("ibtn","✎","Open "+g.name,function(){openPop(g.id)});o.id="open-"+g.id;li.appendChild(o);
+  return li}
+function nextCard(g){const ready=claimable(g),done=finishable(g),col=g.collapsed,cp=cardProg(g);
+  const c=el("article","goal"+(ready.length||done?" won":"")+(col?" collapsed":""));
+  const top=el("div","gtop");const pills=el("div","pills");
+  g.tiers.filter(t=>!t.claimed&&trigOK(g,t)).forEach(t=>pills.appendChild(pill(g,t)));top.appendChild(pills);
+  const r=el("div","gright");if(cp)r.appendChild(el("span","pct",Math.round(cp.pct*100)+"%"));
+  const o=btn("ibtn","✎","Open "+g.name,function(){openPop(g.id)});o.id="open-"+g.id;r.appendChild(o);
+  const cb=btn("ibtn",col?"▸":"▾",(col?"Expand ":"Collapse ")+g.name,function(){g.collapsed=!g.collapsed;refocus="col-"+g.id;save();render()});
+  cb.id="col-"+g.id;cb.setAttribute("aria-expanded",String(!col));r.appendChild(cb);top.appendChild(r);c.appendChild(top);
+  const gn=el("div","gname");gn.appendChild(el("h2",null,g.name));gn.appendChild(kindChip(g));c.appendChild(gn);
+  if(!col&&g.why)c.appendChild(el("p","why",g.why));
+  if(cp)c.appendChild(bar(cp.pct,(col?"thin":"")+(done?" gold":"")));
+  const nt=nextTier(g);
+  if(!col&&nt)c.appendChild(el("p","nextr","Next reward: "+nt.name+", "+(g.ongoing?cp.label:tierText(g,nt))+"."));
+  ready.forEach(t=>{const w=el("div","claim");w.appendChild(el("p",null,"You earned "+t.name+"."));
+    w.appendChild(btn("btn gold","Claim "+t.name,null,function(){claimTier(g.id,t.id)}));c.appendChild(w)});
+  if(!ready.length&&done){const w=el("div","claim");w.appendChild(el("p",null,"Everything's done."));
+    w.appendChild(btn("btn gold","Finish goal","Finish "+g.name,function(){finishGoal(g.id)}));c.appendChild(w)}
+  const hs=goalHabits(g);
+  if(col){const due=hs.filter(h=>dueToday(h)||doneToday(h));
+    if(due.length){const m=el("div","minis");due.forEach(h=>{const l=el("label","mini"+(doneToday(h)?" done":""));
+      l.appendChild(check(doneToday(h),h.name,function(){toggleHabit(h.id)},"sm"));l.appendChild(el("span",null,h.name));m.appendChild(l)});c.appendChild(m)}
+    const ns=nextStep(g);
+    if(ns){const l=el("label","cnext");l.appendChild(check(false,ns.text,function(){toggleStep(g.id,ns.id)},"sm"));
+      l.appendChild(el("span",null,"Next: "+ns.text));if(ns.due)l.appendChild(dueSpan(ns.due));c.appendChild(l)}
+    return c}
+  if(hs.length){c.appendChild(el("h3","sect","Today"));const ul=el("ul","rows");
+    hs.slice().sort((a,b)=>dueToday(b)-dueToday(a)).forEach(h=>{const li=el("li","row"+(doneToday(h)?" done":"")+(dueToday(h)?"":" off"));
+      li.appendChild(check(doneToday(h),h.name,function(){toggleHabit(h.id)}));
+      const b=el("div","body");b.appendChild(el("div","name",h.name));b.appendChild(el("div","meta",habitMeta(h)));
+      b.appendChild(bar(habitBar(h),"thin"+(habitGold(h)?" gold":"")));li.appendChild(b);ul.appendChild(li)});
+    c.appendChild(ul)}
+  if(g.steps.length){const k=stepsDone(g),N=g.steps.length;
+    c.appendChild(el("h3","sect","Steps, "+k+" of "+N+" done"));
+    const ul=el("ul","rows");
+    orderedSteps(g).forEach(st=>{const li=el("li","row"+(st.done?" done":""));li.appendChild(check(st.done,st.text,function(){toggleStep(g.id,st.id)}));
+      const b=el("div","body");b.appendChild(el("div","name",st.text));
+      if(st.done&&st.doneOn)b.appendChild(el("div","meta","Done "+shortDay(st.doneOn)));
+      else if(!st.done&&st.due){const m=el("div","meta");m.appendChild(dueSpan(st.due));b.appendChild(m)}
+      li.appendChild(b);ul.appendChild(li)});
+    c.appendChild(ul)}
+  if(!hs.length&&!g.steps.length){const p=el("p","hint","Nothing earns this yet. ");
+    p.appendChild(btn("linkbtn","Add a habit or step",null,function(){refocus="hn-"+g.id;openPop(g.id,"habit")}));c.appendChild(p)}
+  return c}
+
+function renderGoals(){const L=$("goalList");L.innerHTML="";
+  const list=active();
+  if(!list.length)L.appendChild(el("p","hint","No goals yet. Add one above."));
+  sortGoals(list).forEach(g=>L.appendChild(goalTile(g)));
+  const rows=[];
+  S.goals.forEach(g=>{
+    g.tiers.filter(t=>t.claimed).forEach(t=>rows.push({day:t.claimed,title:t.name,meta:"Earned "+shortDay(t.claimed)+" for "+g.name,label:"Put back "+t.name,fn:function(){unclaimTier(g.id,t.id)}}));
+    if(g.claimed&&!g.tiers.some(t=>t.claimed))rows.push({day:g.claimed,title:g.name,meta:"Finished "+shortDay(g.claimed),label:"Put back "+g.name,fn:function(){unfinish(g.id)}})});
+  $("trophyCard").hidden=!rows.length;
+  const T=$("trophies");T.innerHTML="";
+  rows.sort((a,b)=>b.day.localeCompare(a.day)).forEach(x=>{const r=el("div","trophy");r.appendChild(el("span",null,"🏆"));
+    const b=el("div","body");b.appendChild(el("b",null,x.title));b.appendChild(el("div","meta",x.meta));r.appendChild(b);
+    r.appendChild(btn("btn ghost","Put back",x.label,x.fn));T.appendChild(r)});
+}
+
+/* ---------- backup: export to a file (or a copy box), import replaces everything ---------- */
+function openBackup(){bkOpen=true;bkMode="";bkPending=null;bkText="";refocus="exportBtn";render()}
+function closeBackup(){bkOpen=false;bkMode="";bkPending=null;bkText="";refocus="backupLink";render()}
+function renderBkModal(){const M=$("bkModal");M.hidden=!bkOpen;
+  if(bkOpen){document.body.classList.add("modal-open");renderBackup()}else{$("backupArea").innerHTML="";if(!openGoal)document.body.classList.remove("modal-open")}}
+function goalWord(n){return n+(n===1?" goal":" goals")}
+function exportData(){return JSON.stringify({app:"rewardgoals",exported:today(),state:S},null,1)}
+async function doExport(){const data=exportData(),name="carrot-"+today()+".json";
+  /* phones: the share sheet (Save to Files, Drive, email…); elsewhere a normal download */
+  let file=null;try{file=new File([data],name,{type:"application/json"})}catch(e){}
+  const touch=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches;
+  if(touch&&file&&navigator.canShare&&navigator.share){let ok=false;try{ok=navigator.canShare({files:[file]})}catch(e){}
+    if(ok){try{await navigator.share({files:[file],title:name});markExported();bkMode="";render();toast("Backup saved. Keep it somewhere safe.");return}
+      catch(e){if(e&&e.name==="AbortError")return}}}
+  try{const u=URL.createObjectURL(new Blob([data],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},5000);
+    markExported();bkMode="";render();toast("Backup saved as "+name+".");return}catch(e){}
+  bkText=data;bkMode="out";refocus="bkCopy";render()}
+function copyBackup(){const ta=$("bkOut");
+  function manual(){if(ta){ta.focus();ta.select()}toast("Select all the text and copy it.")}
+  function fallback(){try{if(ta){ta.focus();ta.select();if(document.execCommand&&document.execCommand("copy")){markExported();toast("Copied. Paste it somewhere safe.");return}}}catch(e){}manual()}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(bkText).then(function(){markExported();toast("Copied. Paste it somewhere safe.")},fallback);return}}catch(e){}
+  fallback()}
+/* parse a backup: the export wrapper or a bare saved state; null if it isn't Carrot data */
+function readBackup(text){let o;try{o=JSON.parse(String(text||"").trim())}catch(e){return null}
+  if(o&&typeof o==="object"&&o.state&&typeof o.state==="object"&&!Array.isArray(o.state))o=o.state;
+  if(!o||typeof o!=="object"||Array.isArray(o)||!Array.isArray(o.goals))return null;
+  if(o.habits!=null&&!Array.isArray(o.habits))return null;
+  return o}
+function checkBackup(text){const o=readBackup(text);
+  if(!o){toast("That doesn’t look like a Carrot backup.");return}
+  bkPending=o;bkFrom="this backup";bkMode="confirm";refocus="bkReplace";render()}
+function pickFile(){const f=$("bkFile");if(f){f.value="";f.click()}}
+function fileChosen(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=function(){checkBackup(r.result)};r.onerror=function(){toast("Couldn't read that file.")};r.readAsText(f)}
+function doImport(){if(!bkPending)return;const o=bkPending;bkPending=null;
+  migrated=false;merge(JSON.parse(JSON.stringify(o)));openGoal="";editing="";confirmDel="";adding="";bkMode="";
+  save();refocus="importBtn";render();toast("Imported "+goalWord(S.goals.length)+".")}
+function renderBackup(){const A=$("backupArea");A.innerHTML="";
+  if(bkMode==="out"){A.appendChild(el("p","addnote","Saving a file didn’t work here, so copy this text and keep it somewhere safe. Import can read it back."));
+    const ta=el("textarea");ta.id="bkOut";ta.readOnly=true;ta.value=bkText;ta.setAttribute("aria-label","Backup text");A.appendChild(ta);
+    const l=el("div","bline");const cp=btn("btn","Copy",null,copyBackup);cp.id="bkCopy";l.appendChild(cp);
+    l.appendChild(btn("btn ghost","Close",null,function(){bkMode="";bkText="";refocus="exportBtn";render()}));A.appendChild(l)}
+  else if(bkMode==="in"){A.appendChild(el("p","addnote","Choose a backup file, or paste backup text below."));
+    const fi=el("input");fi.type="file";fi.id="bkFile";fi.accept=".json,application/json,text/plain";fi.hidden=true;fi.addEventListener("change",fileChosen);A.appendChild(fi);
+    const l1=el("div","bline");const ch=btn("btn","Choose file",null,pickFile);ch.id="bkChoose";l1.appendChild(ch);A.appendChild(l1);
+    const ta=el("textarea");ta.id="bkIn";ta.placeholder="…or paste backup text here";ta.setAttribute("aria-label","Backup text to import");ta.style.marginTop="10px";A.appendChild(ta);
+    const l2=el("div","bline");l2.appendChild(btn("btn","Use pasted text",null,function(){if(!ta.value.trim()){ta.focus();return}checkBackup(ta.value)}));
+    l2.appendChild(btn("btn ghost","Cancel",null,function(){bkMode="";refocus="importBtn";render()}));A.appendChild(l2)}
+  else if(bkMode==="confirm"&&bkPending){const n=bkPending.goals.filter(g=>g&&typeof g==="object"&&!g.ex).length;
+    const k=el("div","confirm");k.style.margin="0";k.appendChild(el("p",null,"Replace your "+goalWord(S.goals.length)+" with "+goalWord(n)+" from "+bkFrom+"?"));
+    const rb=btn("btn danger","Replace",null,doImport);rb.id="bkReplace";k.appendChild(rb);
+    k.appendChild(btn("btn ghost","Cancel",null,function(){bkPending=null;bkMode="";refocus="importBtn";render()}));A.appendChild(k)}
+  if(bkMode)return;
+  const snaps=getSnaps().slice().reverse();if(!snaps.length)return;
+  A.appendChild(el("div","sect","Restore a snapshot"));
+  A.appendChild(el("p","addnote","Carrot keeps a copy from the start of each of the last 7 days on this device."));
+  snaps.forEach(function(x){let o=null;try{o=readBackup(x.state)}catch(e){}if(!o)return;
+    const n=o.goals.filter(g=>g&&typeof g==="object"&&!g.ex).length,d=parseDay(x.day);
+    const row=el("div","snap");row.appendChild(el("span",null,(x.day===today()?"Today":WDN[d.getDay()]+", "+shortDay(x.day))+" · "+goalWord(n)));
+    const b=btn("btn ghost","Restore","Restore the "+shortDay(x.day)+" snapshot",function(){bkPending=o;bkFrom="the "+shortDay(x.day)+" snapshot";bkMode="confirm";refocus="bkReplace";render()});
+    row.appendChild(b);A.appendChild(row)})
+}
+function goalTile(g){const b=btn("gtile",null,null,function(){openPop(g.id)});b.id="open-"+g.id;
+  const nm=el("span","gtn",g.name);nm.appendChild(kindChip(g));b.appendChild(nm);
+  const hs=goalHabits(g),open=g.tiers.filter(t=>!t.claimed&&trigOK(g,t));let meta;
+  if(isSimple(g))meta="Habit: "+schedText(hs[0]).toLowerCase()+", "+targetText(hs[0]);
+  else{const parts=[];
+    parts.push(open.length?"🎁 "+open.map(t=>t.name).join(", "):g.tiers.length?"All rewards claimed":"No rewards yet");
+    parts.push(hs.length+(hs.length===1?" habit":" habits"));
+    if(g.steps.length)parts.push(stepsDone(g)+" of "+g.steps.length+" steps");
+    meta=parts.join(". ")}
+  b.appendChild(el("span","meta",meta));
+  const cp=cardProg(g);
+  if(cp){const p=el("span","prog");p.appendChild(bar(cp.pct,finishable(g)?"gold":""));p.appendChild(el("b",null,Math.round(cp.pct*100)+"%"));b.appendChild(p);
+    if(cp.t)b.appendChild(el("span","meta","Next: "+cp.t.name+", "+cp.label))}
+  return b}
+
+/* ---------- pop-out: all setup for one goal ---------- */
+function renderModal(){const M=$("modal");const g=openGoal?findGoal(openGoal):null;
+  const old=M.querySelector(".sheet"),scroll=old&&M.dataset.g===openGoal?old.scrollTop:0;
+  if(!g||g.claimed){openGoal="";M.hidden=true;M.innerHTML="";document.body.classList.remove("modal-open");return}
+  M.innerHTML="";M.dataset.g=g.id;M.hidden=false;document.body.classList.add("modal-open");
+  const sh=el("div","sheet");sh.setAttribute("role","dialog");sh.setAttribute("aria-modal","true");sh.setAttribute("aria-labelledby","popTitle");
+  const hd=el("div","shead");const ttl=el("h2",null,g.name);ttl.id="popTitle";hd.appendChild(ttl);
+  const x=btn("ibtn","×","Close",closePop);x.id="pclose";hd.appendChild(x);sh.appendChild(hd);
+
+  /* about */
+  function field(id,label,node,note){const f=el("div","fld");const l=el("label",null,label);l.htmlFor=id;f.appendChild(l);f.appendChild(node);if(note)f.appendChild(el("div","note",note));return f}
+  const nm=input("pn",g.name,null);
+  nm.addEventListener("input",function(){const v=nm.value.trim();if(v){g.name=v;ttl.textContent=v;save();renderTop()}});
+  nm.addEventListener("blur",function(){if(!nm.value.trim())nm.value=g.name});
+  sh.appendChild(field("pn","Name",nm));
+  const tg=el("div","fld");tg.appendChild(el("label",null,"This goal is"));const seg=el("div","seg");seg.setAttribute("role","group");seg.setAttribute("aria-label","Ending or ongoing");
+  [[false,"Ending"],[true,"Ongoing"]].forEach(o=>{const b=btn("chip wide",o[1],null,function(){if(g.ongoing===o[0])return;g.ongoing=o[0];refocus="kind-"+o[1];save();render()});
+    b.id="kind-"+o[1];b.setAttribute("aria-pressed",String(g.ongoing===o[0]));seg.appendChild(b)});
+  tg.appendChild(seg);tg.appendChild(el("div","note",g.ongoing?"Never finishes. Rewards unlock from a habit count or specific steps.":"Finishes when everything's done. Rewards can also unlock at a % of the goal."));
+  sh.appendChild(tg);
+  if(!g.ongoing){const dl=el("div","dateline");const di=el("input");di.type="date";di.id="pdue";di.value=g.due;
+    di.addEventListener("change",function(){g.due=validDay(di.value)?di.value:"";refocus="pdue";save();render()});dl.appendChild(di);
+    if(g.due){dl.appendChild(dueSpan(g.due));const cl=btn("btn ghost sm","Clear","Clear due date",function(){g.due="";refocus="pdue";save();render()});cl.style.marginTop="0";dl.appendChild(cl)}
+    sh.appendChild(field("pdue","Due date (optional)",dl))}
+  const why=input("pw",g.why,null);why.placeholder="e.g. Feel stronger, sleep better";
+  why.addEventListener("input",function(){g.why=why.value.trim();save();renderTop()});
+  sh.appendChild(field("pw","Why it's worth it",why,"Shown on the card every day."));
+  const ds=el("textarea");ds.id="pd";ds.value=g.desc;ds.placeholder="Why you want it, how far you want to get, the end goal, must-dos, nice-to-haves…";
+  ds.addEventListener("input",function(){g.desc=ds.value;save()});
+  sh.appendChild(field("pd","Description",ds));
+
+  /* reward tiers */
+  sh.appendChild(el("h3","sect","Rewards"));
+  const tl=el("ul","rows");
+  g.tiers.forEach(t=>{const li=el("li","row");
+    if(editing===t.id){const f=el("div","form");f.style.flex="1";
+      function commit(){const r=readTier("tfE-"+t.id,g);if(!r)return;t.name=r.name;t.trig=r.trig;editing="";save();render()}
+      f.appendChild(tierForm("tfE-"+t.id,g,t,commit));
+      const l=el("div","line");l.appendChild(btn("btn","Save",null,commit));l.appendChild(btn("btn ghost","Cancel",null,function(){editing="";render()}));f.appendChild(l);
+      li.appendChild(f);refocus=refocus||"tfE-"+t.id+"-name"}
+    else{const b=el("div","body");b.appendChild(el("div","name","🎁 "+t.name));
+      const st=t.claimed?"Claimed "+shortDay(t.claimed):tierMet(g,t)?"Ready to claim":"Locked";
+      b.appendChild(el("div","meta",cap(tierText(g,t))+". "+st+"."));
+      if(!t.claimed&&!trigOK(g,t))b.appendChild(el("div","flag","Pick a new trigger: ongoing goals use a habit count or steps."));
+      li.appendChild(b);
+      const a=el("div","acts");a.appendChild(btn("ibtn","✎","Edit "+t.name,function(){editing=t.id;confirmDel="";render()}));
+      a.appendChild(btn("ibtn","×","Delete "+t.name,function(){delTier(g.id,t.id)}));li.appendChild(a)}
+    tl.appendChild(li)});
+  sh.appendChild(tl);
+  if(!g.tiers.length)sh.appendChild(el("p","hint","No rewards yet. A goal works without one."));
+  if(adding==="tier"){const tf=el("div","form");tf.appendChild(tierForm("tfA",g,null,function(){addTier(g.id)}));
+    const tline=el("div","line");tline.appendChild(btn("btn","Add reward",null,function(){addTier(g.id)}));
+    tline.appendChild(btn("btn ghost","Cancel",null,function(){adding="";refocus="addTierBtn";render()}));tf.appendChild(tline);sh.appendChild(tf);}
+  else{const ab=btn("btn ghost addbtn","+ Add reward",null,function(){adding="tier";editing="";refocus="tfA-name";render()});ab.id="addTierBtn";sh.appendChild(ab)}
+
+  /* habits */
+  sh.appendChild(el("h3","sect","Habits"));
+  const ul=el("ul","rows");
+  goalHabits(g).forEach(h=>{const li=el("li","row");
+    if(editing===h.id){const f=el("div","form");f.style.flex="1";const n=input("eh-"+h.id,h.name,"Habit");
+      const cfg=habitConfig("cfgE-"+h.id,h);
+      function commit(){const v=n.value.trim();if(!v){n.focus();return}const c=readConfig("cfgE-"+h.id);if(!c)return;
+        const changed=JSON.stringify(c.sched)!==JSON.stringify(h.sched);
+        h.name=v;h.kind=c.kind;h.target=c.target;h.sched=c.sched;if(changed)h.bestBase=0;editing="";save();render()}
+      onEnter(n,commit);cfg.querySelectorAll("input").forEach(i=>onEnter(i,commit));f.appendChild(n);f.appendChild(cfg);
+      const l=el("div","line");l.appendChild(btn("btn","Save",null,commit));l.appendChild(btn("btn ghost","Cancel",null,function(){editing="";render()}));f.appendChild(l);
+      li.appendChild(f);refocus=refocus||"eh-"+h.id}
+    else{const b=el("div","body");b.appendChild(el("div","name",h.name));b.appendChild(el("div","meta",schedText(h)+". Target: "+targetText(h)+"."));
+      b.appendChild(el("div","meta",habitMeta(h)));li.appendChild(b);
+      const a=el("div","acts");a.appendChild(btn("ibtn","✎","Edit "+h.name,function(){editing=h.id;confirmDel="";render()}));
+      a.appendChild(btn("ibtn","×","Delete "+h.name,function(){confirmDel=h.id;render()}));li.appendChild(a)}
+    ul.appendChild(li);
+    if(confirmDel===h.id){const k=el("li","confirm");k.appendChild(el("p",null,"Delete this habit and its streak?"));
+      k.appendChild(btn("btn danger","Delete",null,function(){delHabit(h.id)}));k.appendChild(btn("btn ghost","Cancel",null,function(){confirmDel="";render()}));ul.appendChild(k)}
+  });
+  sh.appendChild(ul);
+  if(adding==="habit"){const hf=el("div","form");const hn=input("hn-"+g.id,"","New habit, e.g. Practice 20 minutes");onEnter(hn,function(){addHabit(g.id)});
+    const cfg=habitConfig("cfgA-"+g.id,null);cfg.querySelectorAll("input").forEach(i=>onEnter(i,function(){addHabit(g.id)}));
+    hf.appendChild(hn);hf.appendChild(cfg);const hl=el("div","line");hl.appendChild(btn("btn","Add habit",null,function(){addHabit(g.id)}));
+    hl.appendChild(btn("btn ghost","Cancel",null,function(){adding="";refocus="addHabitOpen";render()}));hf.appendChild(hl);sh.appendChild(hf);}
+  else{const ab=btn("btn ghost addbtn","+ Add habit",null,function(){adding="habit";editing="";refocus="hn-"+g.id;render()});ab.id="addHabitOpen";sh.appendChild(ab)}
+
+  /* steps: list order is priority, not a sequence; Up next shows them soonest due first, then in this order */
+  sh.appendChild(el("h3","sect","Steps"));
+  const sl=el("ul","rows");
+  g.steps.forEach((s,i)=>{const li=el("li","row"+(s.done?" done":""));
+    if(editing===s.id){const f=el("div","form");f.style.flex="1";f.style.margin="0";const ln=el("div","line");const n=input("es-"+s.id,s.text,"Step");
+      const dd=el("input");dd.type="date";dd.id="esd-"+s.id;dd.value=s.due;dd.setAttribute("aria-label","Due date (optional)");
+      function commit(){const v=n.value.trim();if(!v){n.focus();return}s.text=v;s.due=validDay(dd.value)?dd.value:"";editing="";save();render()}
+      onEnter(n,commit);onEnter(dd,commit);ln.appendChild(n);ln.appendChild(dd);f.appendChild(ln);
+      const l2=el("div","line");l2.appendChild(btn("btn","Save",null,commit));
+      if(s.due)l2.appendChild(btn("btn ghost","Clear date",null,function(){dd.value=""}));
+      l2.appendChild(btn("btn ghost","Cancel",null,function(){editing="";render()}));f.appendChild(l2);
+      li.appendChild(f);refocus=refocus||"es-"+s.id}
+    else{li.appendChild(check(s.done,s.text,function(){toggleStep(g.id,s.id)}));
+      const b=el("div","body");b.appendChild(el("div","name",s.text));if(s.done&&s.doneOn)b.appendChild(el("div","meta","Done "+shortDay(s.doneOn)));
+      else if(!s.done&&s.due){const m=el("div","meta");m.appendChild(dueSpan(s.due));b.appendChild(m)}li.appendChild(b);
+      const a=el("div","acts");
+      const up=btn("ibtn","↑","Move up "+s.text,function(){moveStep(g.id,s.id,-1)});up.id="up-"+s.id;up.disabled=i===0;
+      const dn=btn("ibtn","↓","Move down "+s.text,function(){moveStep(g.id,s.id,1)});dn.id="dn-"+s.id;dn.disabled=i===g.steps.length-1;
+      a.appendChild(up);a.appendChild(dn);a.appendChild(btn("ibtn","✎","Edit "+s.text,function(){editing=s.id;render()}));
+      a.appendChild(btn("ibtn","×","Delete "+s.text,function(){delStep(g.id,s.id)}));li.appendChild(a)}
+    sl.appendChild(li)});
+  sh.appendChild(sl);
+  const sf=el("div","form");const sline=el("div","line");const sn=input("sn-"+g.id,"","New step, e.g. Learn a new song");onEnter(sn,function(){addStep(g.id)});
+  const sd=el("input");sd.type="date";sd.id="sd-"+g.id;sd.setAttribute("aria-label","Due date (optional)");sd.title="Due date (optional)";onEnter(sd,function(){addStep(g.id)});
+  sline.appendChild(sn);sline.appendChild(sd);sline.appendChild(btn("btn","Add step",null,function(){addStep(g.id)}));sf.appendChild(sline);sh.appendChild(sf);
+
+  /* footer */
+  if(confirmDel===g.id){const k=el("div","confirm");k.appendChild(el("p",null,"Delete this goal, its habits and rewards?"));
+    k.appendChild(btn("btn danger","Delete",null,function(){delGoal(g.id)}));k.appendChild(btn("btn ghost","Cancel",null,function(){confirmDel="";render()}));sh.appendChild(k)}
+  const ft=el("div","sfoot");
+  const dl=btn("btn ghost","Delete goal",null,function(){confirmDel=g.id;render()});ft.appendChild(dl);
+  ft.appendChild(btn("btn","Done",null,closePop));sh.appendChild(ft);
+  M.appendChild(sh);sh.scrollTop=scroll;
+}
+
+/* ---------- wiring ---------- */
+$("p-next").addEventListener("click",function(){setPage("next")});
+$("p-goals").addEventListener("click",function(){setPage("goals")});
+$("addHabitBtn").addEventListener("click",addQuickHabit);
+$("addGoalBtn").addEventListener("click",addGoal);
+$("exportBtn").addEventListener("click",doExport);
+$("backupLink").addEventListener("click",openBackup);
+$("bkClose").addEventListener("click",closeBackup);
+$("bkDone").addEventListener("click",closeBackup);
+$("bkModal").addEventListener("click",function(e){if(e.target===$("bkModal"))closeBackup()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&bkOpen){
+  if(bkMode){refocus=bkMode==="out"?"exportBtn":"importBtn";bkMode="";bkPending=null;bkText="";render()}else closeBackup()}});
+$("importBtn").addEventListener("click",function(){bkMode="in";bkPending=null;refocus="bkChoose";render()});
+$("goalName").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();addQuickHabit()}});
+$("modal").addEventListener("click",function(e){if(e.target===$("modal"))closePop()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&openGoal){if(editing||confirmDel||adding){
+  refocus=adding==="tier"?"addTierBtn":adding==="habit"?"addHabitOpen":"";editing="";confirmDel="";adding="";render()}else closePop()}});
+function dayCheck(){if(today()!==lastDay){takeSnapshot();render()}}
+setInterval(dayCheck,30000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)dayCheck()});
+
+const local=localLoad();
+if(local){merge(local);if(migrated)localSave()}
+if(!validDay(lsGet("since")))lsSet("since",today());
+takeSnapshot();
+render();
+/* ask the browser not to clear this app's storage when space runs low */
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){})}catch(e){}
+/* offline + updates: the service worker caches the app; a new version waits until you tap reload */
+function showUpdate(w){swWaiting=w;$("updBar").hidden=false}
+$("updBtn").addEventListener("click",function(){swReload=true;if(swWaiting)swWaiting.postMessage("skip");else location.reload()});
+if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.addEventListener("controllerchange",function(){if(swReload){swReload=false;location.reload()}});
+  navigator.serviceWorker.register("sw.js").then(function(reg){
+    if(reg.waiting&&navigator.serviceWorker.controller)showUpdate(reg.waiting);
+    reg.addEventListener("updatefound",function(){const w=reg.installing;if(!w)return;
+      w.addEventListener("statechange",function(){if(w.state==="installed"&&navigator.serviceWorker.controller)showUpdate(w)})});
+    document.addEventListener("visibilitychange",function(){if(!document.hidden)reg.update().catch(function(){})});
+  }).catch(function(){});
+}
+})();
+</script>
+</body>
+</html>
